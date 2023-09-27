@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Samana AWS</title>
+	<script src="js/jquery-3.7.0.min.js"></script>
+	<script src="js/samanaaws.js"></script>
+	<link rel="stylesheet" href="css/samanaaws.css">
+</head>
+<body>
+	<h1>Samana AWS Console</h1>
+	Region<select class="Region">
+		<option value="us-east-1">us-east-1</option>
+		<option value="us-east-2">us-east-2</option>
+		<option value="us-west-2">us-west-2</option>
+	</select>
+	<br>
+	<button class="Tabs Selected" tabclass="InstancesTable">Instances</button><button class="Tabs" tabclass="ImagesTable">Images</button>
+	<div class="InstancesTable Tabs TabVisible">
+	<table border="1" class="AllInstances">
+		<tr><td colspan="9">
+			<button id="btnDescribeInstances">Refresh Instances</button>
+			<button id="btnFiltersForm">Filters</button>
+			&nbsp&nbsp
+			<button id="btnNewInstacesForm">New Instance</button>
+			<button id="btnCreateImageForm">New Image</button>
+			&nbsp&nbsp
+			<button id="btnStartInstances">Start</button>
+			<button id="btnStopInstances">Stop</button>
+			<button id="btnRevertInstance">Show Instance Snapshots</button>
+			<button id="btnTerminateInstances">Terminate</button>
+		</td></tr>
+		<tr><th>Name</th><th>InstanceId</th><th>ImageId</th><th>InstanceType</th><th>StateName</th><th>PrivateIpAddress</th><th>SubnetId</th><th>SecurityGroups</th></tr>
+		<tr class="InstanceData"><td class="InstanceData">Loading...</td></tr>
+	</table>
+	</div>
+	<div class="ImagesTable Tabs TabInvisible">
+	<table border="1">
+		<tr><th colspan="3"><button id="btnImagesSearch">Search</button><input id="inpImageDescFilter" value="*"><button id="btnImagesClear">Clear</button><button id="btnImagesNext">Next</button></th></tr>
+		<tr><th>Description</th><th>ImageId</th><th>PlatformDetails</th></tr>
+	</table>
+	</div>
+
+	<div class="NewInstanceForm">
+	<table border="1">
+		<tr><th colspan="2">New Instance</th></tr>
+		<tr>
+			<th>Name</th><td><input class="NewInstance" name="tag:Name"></td>
+		</tr>
+		<tr>
+			<th>ImageId</th><td><input class="NewInstance" name="ImageId"></td>
+		</tr>
+		<tr>
+			<th>InstanceType</th><td><input class="NewInstance" name="InstanceType"></td>
+		</tr>
+		<tr>
+			<th>SecurityGroups</th><td><input class="NewInstance" name="SecurityGroupIds"></td>
+		</tr>
+		<tr>
+			<th>SubnetId</th><td><input class="NewInstance" name="SubnetId"></td>
+		</tr>
+		<tr>
+			<th>UserData</th><td><input type="text" class="NewInstance" name="UserData"></td>
+		</tr>
+		<tr>
+			<th>Count</th><td><input class="NewInstance" name="Count"></td>
+		</tr>
+		<tr><td colspan="2"><button id="btnrun">Run</button><button id="btnruncancel">Cancel</button></td></tr>
+	</table>
+	</div>
+	<div class="SnapshotsTable Dialog">
+	<table border="1">
+		<tr><th colspan=5 class="Title"></th></tr>
+		<tr><th></th><th>Id</th><th>Description</th><th>Creation Date</th><th>State</th></tr>
+	</table>
+	<button id="btnSnapshotInstance">Create Snapshot</button>
+	<button class="BtnCancel">Cancel</button>
+	</div>
+	<div class="FiltersForm">
+	<table border="1">
+		<tr><th>Key</th><th>Value</th><th><button id="btnFiltersAdd" >Add</button><button id="btnFiltersReset">Reset</button></th>
+	</table>
+	</div>
+	<div class="ConfirmForm">
+	<div class="Message"></div>
+	<button class="BtnOK">OK</button>
+	<button class="BtnCancel">Cancel</button>
+	</div>
+	<div class="CreateImageForm">
+	<table border="1">
+		<tr>
+			<th colspan="2">New Image</th>
+		</tr>
+		<tr>
+			<th>InstanceId</th><td><input class="CreateImage" name="InstanceId"></td>
+		</tr>
+		<tr>
+			<th>Name</th><td><input class="CreateImage" name="Name"></td>
+		</tr>
+		<tr>
+			<th>Description</th><td><input class="CreateImage" name="Description"></td>
+		</tr>
+		<tr>
+			<th colspan="2"><button id="btnCreateImage">Create</button></td>
+		</tr>
+	</table>
+	</div>
+	<script language="javascript">
+		$(document).ready(function() {
+			$("#btnrun").on("click", RunInstance);
+			$("#btnDescribeInstances").on("click", DescribeInstances);
+			$("#btnNewInstacesForm").on("click", null, {"window": $(".NewInstanceForm")}, toggleWindow);
+			$("#btnCreateImageForm").on("click", null, {"window": $(".CreateImageForm")}, toggleWindow);
+			$("#btnruncancel").on("click", function() { $(".NewInstanceForm").hide(); });
+			$(".BtnCancel").on("click", function(e) { $(e.target).parent().hide(); });
+			$("#btnFiltersForm").on("click", null, {"window": $(".FiltersForm")}, toggleWindow);
+			$("#btnFiltersAdd").on("click", null, {"key": "", "value": ""}, AddFilter);
+			$("#btnFiltersReset").on("click", ResetFilters);
+			$("#btnImagesSearch").on("click", SearchImages);
+			$("#btnImagesClear").on("click", ClearImages);
+			$("#btnImagesNext").on("click", NextImages);
+			$("#btnCreateImage").on("click", CreateImage);
+			$("button.Tabs").on("click", toggleTabs);
+			$("#btnTerminateInstances").on("click", TerminateInstances);
+			$("#btnStartInstances").on("click", StartInstances);
+			$("#btnStopInstances").on("click", StopInstances);
+			$("#btnSnapshotInstance").on("click", SnapshotInstance);
+			$("#btnRevertInstance").on("click",SnapshotList);
+			$("select.Region").on("change", RegionChange);
+			AddFilter({"data": {"key": "tag:XdConfig", "value": "XdProvisioned=true"}});
+			document.cookie = "region=" + $("select.Region").val();
+			DescribeInstances();
+		});
+	</script>
+</body>
+</html>
